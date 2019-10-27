@@ -10,12 +10,12 @@ endif
 branch=`git rev-parse --abbrev-ref HEAD`
 
 # Parameters
-SolutionNamingBase=tutorial-system-vidu
+SolutionNamingBase=tutorial-system-database-indexer
 SolutionNaming=${SolutionNamingBase}-${branch}
 
 Locale=cicd
 BRANCH_NAME=$(shell git rev-parse --abbrev-ref HEAD)
-RepositoyName=tutorialsystem-video-uploader
+RepositoyName=tutorialsystem-database-indexer
 SlackChannel=
 SlackURL=
 SlackIcon=

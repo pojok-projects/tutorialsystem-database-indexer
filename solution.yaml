@@ -53,7 +53,7 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       Path: '/service/'
-      RoleName: !Sub '${pSolutionNaming}-${AWS::Region}-vidu-role'
+      RoleName: !Sub '${pSolutionNaming}-${AWS::Region}-dbi-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -90,9 +90,9 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub '${pSolutionNaming}-lambda'
-      Description: Video Uploader - Lambda
+      Description: Database Indexer - Lambda
       Runtime: nodejs10.x
-      Role: !Sub ${rVideoUploaderLambdaExecutionRole.Arn}
+      Role: !Sub ${rDatabaseIndexerLambdaExecutionRole.Arn}
       Code: .webpack
       Handler: lambda.handler
       MemorySize: 256

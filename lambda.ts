@@ -1,43 +1,44 @@
-const AWS = require('aws-sdk');
-const path = require('path');
-const creds = new AWS.EnvironmentCredentials('AWS');
-const esDomain = {
-  endpoint: process.env.ES_ENDPOINT,
-  region: process.env.ES_REGION,
-  index: 'search',
-  doctype: 'ContentMetadata',
-};
-const endpoint = new AWS.Endpoint(esDomain.endpoint);
-exports.handler = (event, context, _callback) => {
-  event.Records.forEach(record => {
-    postDocumentToES(record.dynamodb.NewImage, context);
+import AWS = require('aws-sdk');
+import elasticsearch = require('elasticsearch');
+const esClient = new elasticsearch.Client({
+  host: process.env.ES_ENDPOINT,
+  log: 'error',
+});
+
+const index = 'Content';
+const type = 'Metadata';
+
+exports.handler = (event: any, context: any, _callback: any) => {
+  console.log('Receive event:', JSON.stringify(event));
+
+  let bulkBody: any[] = [];
+
+  event.Records.forEach((item: any) => {
+    bulkBody.push({
+      index: {
+        _index: index,
+        _type: type,
+        _id: unmarshall(item.Keys).id,
+      },
+    });
+
+    bulkBody.push(unmarshall(item.NewImage));
   });
+
+  esClient
+    .bulk({body: bulkBody})
+    .then(response => {
+      let errorCount = 0;
+      response.items.forEach(item => {
+        if (item.index && item.index.error) {
+          console.log(++errorCount, item.index.error);
+        }
+      });
+      console.log(`Successfully indexed items`);
+    })
+    .catch(console.error);
 };
-function postDocumentToES(doc, context) {
-  const req = new AWS.HttpRequest(endpoint);
-  req.method = 'POST';
-  req.path = path.join('/', esDomain.index, esDomain.doctype);
-  req.region = esDomain.region;
-  req.body = JSON.stringify(doc);
-  req.headers['presigned-expires'] = false;
-  req.headers['Host'] = endpoint.host;
-  // Sign the request (Sigv4)
-  const signer = new AWS.Signers.V4(req, 'es');
-  signer.addAuthorization(creds, new Date());
-  // Post document to ES
-  const send = new AWS.NodeHttpClient();
-  send.handleRequest(
-    req,
-    null,
-    function(httpResp) {
-      let body = '';
-      httpResp.on('data', chunk => (body += chunk));
-      httpResp.on('end', () => context.succeed());
-      console.log('Body:', body);
-    },
-    function(err) {
-      console.log('Error:', err);
-      context.fail();
-    }
-  );
+
+function unmarshall(data: any) {
+  return AWS.DynamoDB.Converter.unmarshall(data);
 }

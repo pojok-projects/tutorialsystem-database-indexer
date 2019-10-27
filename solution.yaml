@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: 'Tutorial System - Database Indexer Solution'
+
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  pSolutionNaming:
+    Type: String
+
+Resources:
+  rCommonPolicyForLambdas:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Policy allowing log stream access, vpc config and xray config
+      Path: !Sub '/service/'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+              - ec2:CreateNetworkInterface
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeNetworkInterface
+              - ec2:DeleteNetworkInterface
+              - ec2:DescribeVpcEndpoints
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - xray:PutTraceSegments
+              - xray:PutTelemetryRecords
+              - xray:GetSamplingRules
+              - xray:GetSamplingTargets
+              - xray:GetSamplingStatisticSummaries
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - kms:GenerateDataKey
+              - kms:Decrypt
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:*
+            Resource: '*'
+
+  rDatabaseIndexerLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: '/service/'
+      RoleName: !Sub '${pSolutionNaming}-${AWS::Region}-vidu-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref rCommonPolicyForLambdas
+      Policies:
+        - PolicyName: !Sub '${pSolutionNaming}-elasticsearch-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - es:ESHttpPost
+                Resource: '*'
+        - PolicyName: !Sub '${pSolutionNaming}-dynamodb-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource: '*'
+
+  rDatabaseIndexerLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${pSolutionNaming}-lambda'
+      Description: Video Uploader - Lambda
+      Runtime: nodejs10.x
+      Role: !Sub ${rVideoUploaderLambdaExecutionRole.Arn}
+      Code: .webpack
+      Handler: lambda.handler
+      MemorySize: 256
+      Timeout: 900
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ES_ENDPOINT: https://search-search-erj4urqrvx4c5eoqsxxggi6zfq.ap-southeast-1.es.amazonaws.com
+          ES_REGION: ap-southeast-1

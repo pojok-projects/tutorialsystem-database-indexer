@@ -7,6 +7,12 @@ Transform: AWS::Serverless-2016-10-31
 Parameters:
   pSolutionNaming:
     Type: String
+  pAccessKey:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: ACCESS_KEY
+  pSecretKey:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Default: SECRET_KEY
 
 Resources:
   rCommonPolicyForLambdas:
@@ -103,3 +109,5 @@ Resources:
         Variables:
           ES_ENDPOINT: https://search-search-erj4urqrvx4c5eoqsxxggi6zfq.ap-southeast-1.es.amazonaws.com
           ES_REGION: ap-southeast-1
+          ACCESS_KEY: !Sub ${pAccessKey}
+          SECRET_KEY: !Sub ${pSecretKey}

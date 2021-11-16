@@ -15,7 +15,7 @@
     "dev": "nodemon -e ts --exec \"yarn serve\""
   },
   "dependencies": {
-    "aws-sdk": "^2.528.0",
+    "aws-sdk": "^2.814.0",
     "elasticsearch": "^16.4.0"
   },
   "devDependencies": {
